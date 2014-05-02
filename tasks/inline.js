@@ -13,6 +13,8 @@ module.exports = function(grunt) {
 	var datauri = require('datauri');
 	var UglifyJS = require("uglify-js");
 	var CleanCSS = require('clean-css');
+	var ngmin = require('ngmin');
+	var htmlmin = require('html-minify');
 
 	grunt.registerMultiTask('inline', "Replaces <link>, <script> and <img> tags to their inline contents", function() {
 		var files = this.filesSrc,
@@ -99,7 +101,11 @@ module.exports = function(grunt) {
 
 			if(!isRemotePath(src) && src.indexOf(options.tag)!=-1){
 				var inlineFilePath = path.resolve( path.dirname(filepath), src ).replace(/\?.*$/, '');	// 将参数去掉
-				var c = options.uglify ? UglifyJS.minify(inlineFilePath).code : grunt.file.read( inlineFilePath );
+				// var c = options.uglify ? UglifyJS.minify(inlineFilePath).code : grunt.file.read( inlineFilePath );
+				var c = options.ngmin ? ngmin.annotate(grunt.file.read(inlineFilePath)) : grunt.file.read( inlineFilePath );
+				c = options.uglify ? UglifyJS.minify(c, {fromString: true}).code : c;
+				// var c = options.uglify ? (options.ngmin ? UglifyJS.minify(ngmin.annotate(grunt.file.read(inlineFilePath)), {fromString: true}).code
+				// 						  : UglifyJS.minify(inlineFilePath).code) : grunt.file.read( inlineFilePath );
 				if( grunt.file.exists(inlineFilePath) ){
 					ret = '<script>\n' + c + '\n</script>';
 				}else{
@@ -144,6 +150,7 @@ module.exports = function(grunt) {
 			
 			return ret;	
 		});
+		if(options.htmlmin) fileContent = htmlmin.minify(fileContent, {collapseWhitespace: true, removeComments: true});
 
 		return fileContent;
 	}
@@ -209,7 +216,7 @@ module.exports = function(grunt) {
 
 			return matchedWord.replace(imgUrl, newUrl);
 		});
-		fileContent = options.cssmin ? CleanCSS.process(fileContent) : fileContent;
+		fileContent = options.cssmin ? CleanCSS.process(fileContent, {root: path.dirname(htmlFilepath)}) : fileContent;
 
 		return fileContent;
 	}
