@@ -23,15 +23,17 @@ module.exports = function(grunt) {
 			cssmin = !!options.cssmin,
 		    	relativeTo = this.options().relativeTo,
 			dest = this.data.dest;
+		var allTemplates = this.data.templates;
 
 		files.forEach(function(filepath){
+
 			var fileType = path.extname(filepath).replace(/^\./, '');
 			var fileContent = grunt.file.read(filepath);
 
 			grunt.log.write('Processing ' + filepath + '...')
 
 			if(fileType==='html'){
-				fileContent = html(filepath, fileContent, relativeTo, options);
+				fileContent = html(filepath, fileContent, relativeTo, options, allTemplates[filepath]);
 			}else if(fileType==='css'){
 				fileContent = css(filepath, fileContent, relativeTo, options);
 			}
@@ -63,10 +65,32 @@ module.exports = function(grunt) {
 		return newPathToDestination;
 	}
 
-	function html(filepath, fileContent, relativeTo, options){
+	// Code from:
+	/*
+	 *
+	 * Copyright (c) 2013 Luke Bunselmeyer
+	 * Licensed under the MIT license.
+	 */
+
+	function html(filepath, fileContent, relativeTo, options, templates){
 	    if(relativeTo){
 	        filepath = filepath.replace(/[^\/]+\//, relativeTo);
 	    }
+
+		// read templates if present and prepend </body> tag
+		if(templates)
+		{
+			var templateData = '', relativePath;
+			templates = grunt.file.expand(templates);
+			for(var i=0; i<templates.length; ++i)
+			{
+				relativePath = path.relative(path.dirname(filepath), templates[i]);
+				templateData += '<script type="text/ng-template" id="' + relativePath + '">\n' + grunt.file.read(templates[i]) + '\n</script>\n';
+			}
+			fileContent = fileContent.replace(/<\/body>/g, function() {
+				return templateData + '\n</body>';	
+			});
+		}
 
 		fileContent = fileContent.replace(/<inline.+?src=["']([^"']+?)["']\s*?\/>/g, function(matchedWord, src){
 			var ret = matchedWord;
