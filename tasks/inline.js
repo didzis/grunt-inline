@@ -120,7 +120,9 @@ module.exports = function(grunt) {
 			}
 
 			return ret;
-		}).replace(/<script.+?src=["']([^"']+?)["'].*?>\s*<\/script>/g, function(matchedWord, src){
+		// NOTE: quick and dirty workaround to exclude commented script lines
+		}).replace(/<script.+?src=["']([^"']+?)["'].*?>\s*<\/script>(?!\s*-->)/g, function(matchedWord, src){
+		// }).replace(/<script.+?src=["']([^"']+?)["'].*?>\s*<\/script>/g, function(matchedWord, src){
 			var ret = matchedWord;
 
 			if(!isRemotePath(src) && src.indexOf(options.tag)!=-1){
